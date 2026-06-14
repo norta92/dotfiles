@@ -1,5 +1,5 @@
 // ============================================================================
-// NIRI WINDOW MANAGER - FULL CONFIGURATION FILE
+// NIRI WINDOW MANAGER - FULL ADVANCED CONFIGURATION WITH EDGE ANIMATIONS
 // ============================================================================
 // This config is in the KDL format: https://kdl.dev
 // "/-" comments out the following node.
@@ -69,7 +69,7 @@ layout {
     // Ancho de columna por defecto
     default-column-width { proportion 0.5; }
 
-    // Configuración del anillo de enfoque
+    // Configuración del anillo de enfoque (ANIMADO CON SHADER)
     focus-ring {
         width 4
         active-color "#7fc8ff"
@@ -115,7 +115,7 @@ hotkey-overlay {
 screenshot-path "~/Pictures/Screenshots/Screenshot from %Y-%m-%d %H-%M-%S.png"
 
 // ============================================================================
-// ANIMATIONS CONFIGURATION - COPADITA CON SHADERS
+// ANIMATIONS CONFIGURATION - SUPER COPADITA CON SHADERS AVANZADOS
 // ============================================================================
 animations {
     // Descomenta para ralentizar todas las animaciones
@@ -125,18 +125,16 @@ animations {
     // WORKSPACE SWITCH - Elástica y bounceable
     // ========================================================================
     workspace-switch {
-        // Underdamped spring para efecto "bouncy"
         spring damping-ratio=0.75 stiffness=1200 epsilon=0.0001
     }
 
     // ========================================================================
-    // WINDOW OPEN - Efecto de aparición con shader luminoso
+    // WINDOW OPEN - Shader con glow y zoom elegante
     // ========================================================================
     window-open {
         duration-ms 300
         curve "cubic-bezier" 0.25 0.46 0.45 0.94
 
-        // SHADER PERSONALIZADO: Efecto de radiación/brillo al abrir
         custom-shader r"
             vec4 open_color(vec3 coords_geo, vec3 size_geo) {
                 vec4 color = vec4(0.0);
@@ -144,7 +142,6 @@ animations {
                 if (0.0 <= coords_geo.x && coords_geo.x <= 1.0
                         && 0.0 <= coords_geo.y && coords_geo.y <= 1.0)
                 {
-                    // Obtener textura de la ventana
                     vec3 tex_coords = niri_geo_to_tex * coords_geo;
                     color = texture2D(niri_tex, tex_coords.st);
 
@@ -169,13 +166,23 @@ animations {
     }
 
     // ========================================================================
-    // WINDOW CLOSE - Efecto de desvanecimiento con oscurecimiento
+    // WINDOW CLOSE - OPCIONES MULTIPLES DE SHADERS
     // ========================================================================
-    window-close {
-        duration-ms 250
-        curve "cubic-bezier" 0.25 0.46 0.45 0.94
+    // OPCION 1: PIXEL DISSOLVE (actual - descomposición de píxeles)
+    // OPCION 2: TORNADO VORTEX (remolino)
+    // OPCION 3: BLACK HOLE (agujero negro)
+    // OPCION 4: SHATTER (rotura)
+    // OPCION 5: INK DISPERSION (dispersión)
+    // OPCION 6: QUANTUM PHASE-OUT (desfase cuántico)
+    // OPCION 7: ELECTRIC DISCHARGE (descarga eléctrica)
+    // OPCION 8: PARTICLE BURST (explosión de partículas)
+    // ========================================================================
 
-        // SHADER PERSONALIZADO: Efecto de contracción y desvanecimiento
+    // ========== OPCION 1: PIXEL DISSOLVE ==========
+    window-close {
+        duration-ms 350
+        curve "linear"
+
         custom-shader r"
             vec4 close_color(vec3 coords_geo, vec3 size_geo) {
                 vec4 color = vec4(0.0);
@@ -186,18 +193,313 @@ animations {
                     vec3 tex_coords = niri_geo_to_tex * coords_geo;
                     color = texture2D(niri_tex, tex_coords.st);
 
-                    // Efecto de escala de salida
-                    vec2 center = vec2(0.5);
-                    vec2 offset = coords_geo.xy - center;
-                    float scale = 1.0 - (1.0 - niri_clamped_progress) * 0.3;
-                    offset *= scale;
+                    vec2 pixel = coords_geo.xy * size_geo.xy;
+                    float noise = fract(sin(dot(pixel, vec2(12.9898, 78.233))) * 43758.5453);
 
-                    // Desvanecimiento
+                    float threshold = niri_clamped_progress * 1.5;
+
+                    if (noise < threshold) {
+                        color.a = 0.0;
+                    } else {
+                        color.a *= max(0.0, (threshold - noise + 0.3) / 0.3);
+                    }
+
+                    if (noise < threshold && noise > threshold - 0.1) {
+                        color.rgb += vec3(0.5, 0.7, 1.0) * 0.3;
+                    }
+                }
+
+                return color;
+            }
+        "
+    }
+
+    // ========== OPCION 2: TORNADO VORTEX ==========
+    /-window-close {
+        duration-ms 350
+        curve "linear"
+
+        custom-shader r"
+            vec4 close_color(vec3 coords_geo, vec3 size_geo) {
+                vec4 color = vec4(0.0);
+
+                if (0.0 <= coords_geo.x && coords_geo.x <= 1.0
+                        && 0.0 <= coords_geo.y && coords_geo.y <= 1.0)
+                {
+                    vec2 center = vec2(0.5);
+                    vec2 pos = coords_geo.xy - center;
+
+                    float radius = length(pos);
+                    float angle = atan(pos.y, pos.x);
+
+                    float vortex_strength = niri_clamped_progress * 6.28318;
+                    angle += vortex_strength * (1.0 - radius);
+
+                    float scale = 1.0 - niri_clamped_progress * 0.5;
+                    radius *= scale;
+
+                    vec2 new_pos = vec2(cos(angle), sin(angle)) * radius + center;
+
+                    vec3 tex_coords = niri_geo_to_tex * vec3(new_pos, 1.0);
+                    color = texture2D(niri_tex, tex_coords.st);
+
                     color.a *= (1.0 - niri_clamped_progress);
 
-                    // Oscurrecimiento progresivo
-                    float dark = niri_clamped_progress * 0.3;
-                    color.rgb *= (1.0 - dark);
+                    if (radius < 0.2 && niri_clamped_progress > 0.3) {
+                        color.rgb += vec3(0.8, 0.4, 1.0) * niri_clamped_progress * 0.5;
+                    }
+                }
+
+                return color;
+            }
+        "
+    }
+
+    // ========== OPCION 3: BLACK HOLE ==========
+    /-window-close {
+        duration-ms 350
+        curve "cubic-bezier" 0.25 0.46 0.45 0.94
+
+        custom-shader r"
+            vec4 close_color(vec3 coords_geo, vec3 size_geo) {
+                vec4 color = vec4(0.0);
+
+                if (0.0 <= coords_geo.x && coords_geo.x <= 1.0
+                        && 0.0 <= coords_geo.y && coords_geo.y <= 1.0)
+                {
+                    vec2 center = vec2(0.5);
+                    vec2 pos = coords_geo.xy - center;
+                    float dist = length(pos);
+
+                    float pull = niri_clamped_progress * niri_clamped_progress;
+                    vec2 direction = normalize(pos);
+                    pos -= direction * pull * 0.3;
+
+                    float distortion = 1.0 + pull * 0.2;
+                    pos /= distortion;
+
+                    vec2 new_coords = pos + center;
+
+                    if (new_coords.x >= 0.0 && new_coords.x <= 1.0 &&
+                        new_coords.y >= 0.0 && new_coords.y <= 1.0)
+                    {
+                        vec3 tex_coords = niri_geo_to_tex * vec3(new_coords, 1.0);
+                        color = texture2D(niri_tex, tex_coords.st);
+                    }
+
+                    color.a *= (1.0 - niri_clamped_progress);
+                    color.rgb *= (1.0 - niri_clamped_progress * 0.5);
+
+                    if (dist < 0.15 && niri_clamped_progress > 0.4) {
+                        float halo = (0.15 - dist) / 0.15;
+                        color.rgb += vec3(1.0, 0.5, 0.0) * halo * 0.4;
+                    }
+                }
+
+                return color;
+            }
+        "
+    }
+
+    // ========== OPCION 4: SHATTER ==========
+    /-window-close {
+        duration-ms 400
+        curve "linear"
+
+        custom-shader r"
+            vec4 close_color(vec3 coords_geo, vec3 size_geo) {
+                vec4 color = vec4(0.0);
+
+                if (0.0 <= coords_geo.x && coords_geo.x <= 1.0
+                        && 0.0 <= coords_geo.y && coords_geo.y <= 1.0)
+                {
+                    vec3 tex_coords = niri_geo_to_tex * coords_geo;
+                    color = texture2D(niri_tex, tex_coords.st);
+
+                    vec2 cell = floor(coords_geo.xy * 8.0);
+                    vec2 cellFrac = fract(coords_geo.xy * 8.0);
+
+                    float noise = fract(sin(dot(cell, vec2(12.9898, 78.233))) * 43758.5453);
+                    float noise2 = fract(sin(dot(cell, vec2(92.9898, 123.233))) * 43758.5453);
+
+                    vec2 offset = (vec2(noise, noise2) - 0.5) * niri_clamped_progress * 0.4;
+                    vec3 displaced = niri_geo_to_tex * vec3(coords_geo.xy + offset, 1.0);
+                    color = texture2D(niri_tex, displaced.st);
+
+                    float angle = noise * 6.28318 * niri_clamped_progress;
+
+                    color.a *= (1.0 - niri_clamped_progress);
+                    
+                    if (fract(cellFrac.x) < 0.1 || fract(cellFrac.y) < 0.1) {
+                        color.rgb += vec3(0.6, 0.8, 1.0) * niri_clamped_progress * 0.3;
+                    }
+                }
+
+                return color;
+            }
+        "
+    }
+
+    // ========== OPCION 5: INK DISPERSION ==========
+    /-window-close {
+        duration-ms 320
+        curve "ease-out-quad"
+
+        custom-shader r"
+            vec4 close_color(vec3 coords_geo, vec3 size_geo) {
+                vec4 color = vec4(0.0);
+
+                if (0.0 <= coords_geo.x && coords_geo.x <= 1.0
+                        && 0.0 <= coords_geo.y && coords_geo.y <= 1.0)
+                {
+                    vec2 center = vec2(0.5);
+                    vec2 direction = normalize(coords_geo.xy - center);
+                    float dist = length(coords_geo.xy - center);
+
+                    float spread = niri_clamped_progress * 0.5;
+                    vec2 dispersed = coords_geo.xy + direction * spread;
+
+                    vec3 tex_coords = niri_geo_to_tex * vec3(coords_geo.xy, 1.0);
+                    color = texture2D(niri_tex, tex_coords.st);
+
+                    float diffusion = 1.0 - (dist / (0.7 + spread));
+                    color.a *= (1.0 - niri_clamped_progress) * diffusion;
+
+                    float gray = (color.r + color.g + color.b) / 3.0;
+                    color.rgb = mix(color.rgb, vec3(gray), niri_clamped_progress * 0.5);
+
+                    color.rgb *= vec3(1.0 - niri_clamped_progress * 0.2,
+                                     1.0 - niri_clamped_progress * 0.3,
+                                     1.0);
+                }
+
+                return color;
+            }
+        "
+    }
+
+    // ========== OPCION 6: QUANTUM PHASE-OUT ==========
+    /-window-close {
+        duration-ms 380
+        curve "ease-out-quad"
+
+        custom-shader r"
+            vec4 close_color(vec3 coords_geo, vec3 size_geo) {
+                vec4 color = vec4(0.0);
+
+                if (0.0 <= coords_geo.x && coords_geo.x <= 1.0
+                        && 0.0 <= coords_geo.y && coords_geo.y <= 1.0)
+                {
+                    vec3 tex_coords = niri_geo_to_tex * coords_geo;
+                    color = texture2D(niri_tex, tex_coords.st);
+
+                    // Efecto de interferencia cuántica
+                    vec2 center = vec2(0.5);
+                    vec2 pos = coords_geo.xy - center;
+                    float dist = length(pos) * 3.14159;
+
+                    // Onda senoidal que se propaga
+                    float wave = sin(dist - niri_clamped_progress * 10.0);
+                    float phase = (wave + 1.0) / 2.0;
+
+                    // Efecto de desvanecimiento con interferencia
+                    color.a *= (1.0 - niri_clamped_progress) * (0.5 + phase * 0.5);
+
+                    // Color purpura/cian de desfase
+                    color.rgb += vec3(0.5 + phase * 0.5, 0.0, 0.5 + (1.0 - phase) * 0.5) * 
+                                    niri_clamped_progress * 0.2;
+                }
+
+                return color;
+            }
+        "
+    }
+
+    // ========== OPCION 7: ELECTRIC DISCHARGE ==========
+    /-window-close {
+        duration-ms 300
+        curve "linear"
+
+        custom-shader r"
+            vec4 close_color(vec3 coords_geo, vec3 size_geo) {
+                vec4 color = vec4(0.0);
+
+                if (0.0 <= coords_geo.x && coords_geo.x <= 1.0
+                        && 0.0 <= coords_geo.y && coords_geo.y <= 1.0)
+                {
+                    vec3 tex_coords = niri_geo_to_tex * coords_geo;
+                    color = texture2D(niri_tex, tex_coords.st);
+
+                    // Rayos eléctricos
+                    vec2 pixel = coords_geo.xy * size_geo.xy;
+                    float noise = fract(sin(dot(pixel * 10.0, vec2(12.9898, 78.233))) * 43758.5453);
+                    
+                    float branching = abs(sin(niri_clamped_progress * 20.0)) * noise;
+                    float threshold = niri_clamped_progress + branching * 0.2;
+
+                    if (noise > threshold - 0.1 && noise < threshold + 0.05) {
+                        // Brillo eléctrico intenso
+                        color.rgb = mix(color.rgb, vec3(0.0, 0.8, 1.0), 0.8);
+                        color.a *= 1.0;
+                    } else {
+                        color.a *= (1.0 - niri_clamped_progress);
+                    }
+
+                    // Efecto de expansión radial
+                    vec2 center = vec2(0.5);
+                    float dist = length(coords_geo.xy - center);
+                    if (dist < niri_clamped_progress) {
+                        color.rgb += vec3(0.2, 0.5, 0.8) * (1.0 - dist) * 0.3;
+                    }
+                }
+
+                return color;
+            }
+        "
+    }
+
+    // ========== OPCION 8: PARTICLE BURST ==========
+    /-window-close {
+        duration-ms 400
+        curve "ease-out-quad"
+
+        custom-shader r"
+            vec4 close_color(vec3 coords_geo, vec3 size_geo) {
+                vec4 color = vec4(0.0);
+
+                if (0.0 <= coords_geo.x && coords_geo.x <= 1.0
+                        && 0.0 <= coords_geo.y && coords_geo.y <= 1.0)
+                {
+                    vec2 center = vec2(0.5);
+                    vec2 pos = coords_geo.xy - center;
+
+                    // Generar partículas
+                    vec2 cell = floor(coords_geo.xy * 12.0);
+                    float particle_id = fract(sin(dot(cell, vec2(12.9898, 78.233))) * 43758.5453);
+                    
+                    // Dirección y velocidad de cada partícula
+                    float angle = particle_id * 6.28318;
+                    float speed = 0.3 + fract(sin(particle_id * 47.0) * 43758.5453) * 0.2;
+                    
+                    vec2 velocity = vec2(cos(angle), sin(angle)) * speed * niri_clamped_progress;
+                    
+                    // Escala y desvanecimiento de partículas
+                    float scale = 1.0 - niri_clamped_progress * 1.5;
+                    vec2 particle_pos = pos + velocity;
+                    
+                    vec3 tex_coords = niri_geo_to_tex * vec3(particle_pos + center, 1.0);
+                    color = texture2D(niri_tex, tex_coords.st);
+
+                    color.a *= max(0.0, 1.0 - niri_clamped_progress);
+                    
+                    // Brillo arco iris en las partículas
+                    float hue = particle_id * 3.14159;
+                    vec3 particle_color = vec3(
+                        0.5 + 0.5 * sin(hue),
+                        0.5 + 0.5 * sin(hue + 2.0),
+                        0.5 + 0.5 * sin(hue + 4.0)
+                    );
+                    color.rgb += particle_color * (1.0 - niri_clamped_progress) * 0.4;
                 }
 
                 return color;
@@ -206,27 +508,26 @@ animations {
     }
 
     // ========================================================================
-    // HORIZONTAL VIEW MOVEMENT - Spring suave para vistas
+    // HORIZONTAL VIEW MOVEMENT - Spring suave
     // ========================================================================
     horizontal-view-movement {
         spring damping-ratio=0.9 stiffness=900 epsilon=0.00001
     }
 
     // ========================================================================
-    // WINDOW MOVEMENT - Spring suave para movimientos de ventanas
+    // WINDOW MOVEMENT - Spring suave
     // ========================================================================
     window-movement {
         spring damping-ratio=0.9 stiffness=900 epsilon=0.00001
     }
 
     // ========================================================================
-    // WINDOW RESIZE - Con transición visual suave
+    // WINDOW RESIZE - Crossfade con shader
     // ========================================================================
     window-resize {
         duration-ms 200
         curve "cubic-bezier" 0.34 1.56 0.64 1
 
-        // SHADER PERSONALIZADO: Efecto crossfade suave
         custom-shader r"
             vec4 resize_color(vec3 coords_curr_geo, vec3 size_curr_geo) {
                 vec3 tex_prev = niri_geo_to_tex_prev * coords_curr_geo;
@@ -235,9 +536,7 @@ animations {
                 vec3 tex_next = niri_geo_to_tex_next * coords_curr_geo;
                 vec4 color_next = texture2D(niri_tex_next, tex_next.st);
 
-                // Smooth crossfade entre la ventana anterior y siguiente
                 float t = niri_clamped_progress;
-                // Ease-in-out cubic
                 t = t < 0.5 ? 4.0 * t * t * t : 1.0 - pow(-2.0 * t + 2.0, 3.0) / 2.0;
 
                 vec4 color = mix(color_prev, color_next, t);
@@ -247,21 +546,21 @@ animations {
     }
 
     // ========================================================================
-    // CONFIG NOTIFICATION OPEN/CLOSE - Bounce suave
+    // CONFIG NOTIFICATION OPEN/CLOSE
     // ========================================================================
     config-notification-open-close {
         spring damping-ratio=0.65 stiffness=1200 epsilon=0.001
     }
 
     // ========================================================================
-    // EXIT CONFIRMATION OPEN/CLOSE - Bounce moderado
+    // EXIT CONFIRMATION OPEN/CLOSE
     // ========================================================================
     exit-confirmation-open-close {
         spring damping-ratio=0.65 stiffness=700 epsilon=0.01
     }
 
     // ========================================================================
-    // SCREENSHOT UI OPEN - Fade rápido
+    // SCREENSHOT UI OPEN
     // ========================================================================
     screenshot-ui-open {
         duration-ms 200
@@ -269,14 +568,14 @@ animations {
     }
 
     // ========================================================================
-    // OVERVIEW OPEN/CLOSE - Zoom elegante
+    // OVERVIEW OPEN/CLOSE
     // ========================================================================
     overview-open-close {
         spring damping-ratio=0.85 stiffness=900 epsilon=0.0001
     }
 
     // ========================================================================
-    // RECENT WINDOWS CLOSE - Desvanecimiento rápido
+    // RECENT WINDOWS CLOSE
     // ========================================================================
     recent-windows-close {
         spring damping-ratio=1.0 stiffness=1000 epsilon=0.001
@@ -284,16 +583,113 @@ animations {
 }
 
 // ============================================================================
-// WINDOW RULES
+// WINDOW RULES - CON ANIMACIONES EN BORDES
 // ============================================================================
 window-rule {
     match app-id=r#"^org\.wezfurlong\.wezterm$"#
     default-column-width {}
+    
+    // Borde animado con glow
+    border {
+        on
+        width 2
+        active-color "#00ff88"
+        inactive-color "#004d2e"
+    }
+    
+    // Focus ring también animado
+    focus-ring {
+        width 3
+        active-color "#00ffaa"
+        inactive-color "#003d42"
+    }
 }
 
 window-rule {
     match app-id=r#"firefox$"# title="^Picture-in-Picture$"
     open-floating true
+    
+    // Borde especial para ventana flotante
+    border {
+        on
+        width 2
+        active-color "#ff6b9d"
+        inactive-color "#4d213d"
+    }
+}
+
+// Animación de borde especial para ventanas activas
+window-rule {
+    match is-active=true
+    
+    border {
+        on
+        width 2
+        active-color "#7fc8ff"
+        inactive-color "#1a3a4d"
+    }
+    
+    focus-ring {
+        width 3
+        active-color "#7fc8ff"
+        inactive-color "#1a3a4d"
+    }
+    
+    shadow {
+        on
+        softness 40
+        spread 8
+        offset x=0 y=5
+        color "#7fc8ff40"
+    }
+}
+
+// Animación de borde para ventanas inactivas
+window-rule {
+    match is-active=false
+    
+    border {
+        on
+        width 1
+        active-color "#505050"
+        inactive-color "#2d2d2d"
+    }
+    
+    shadow {
+        on
+        softness 20
+        spread 3
+        offset x=0 y=3
+        color "#00000020"
+    }
+}
+
+// Flotantes con animación especial
+window-rule {
+    match is-floating=true
+    
+    border {
+        on
+        width 2
+        active-color "#ffc87f"
+        inactive-color "#4d3620"
+    }
+    
+    focus-ring {
+        width 2
+        active-color "#ffc87f"
+        inactive-color "#4d3620"
+    }
+    
+    geometry-corner-radius 12
+    
+    shadow {
+        on
+        softness 35
+        spread 6
+        offset x=2 y=4
+        color "#00000040"
+    }
 }
 
 // ============================================================================
