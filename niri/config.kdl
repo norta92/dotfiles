@@ -1,0 +1,482 @@
+// ============================================================================
+// NIRI WINDOW MANAGER - FULL CONFIGURATION FILE
+// ============================================================================
+// This config is in the KDL format: https://kdl.dev
+// "/-" comments out the following node.
+// Check the wiki for a full description of the configuration:
+// https://niri-wm.github.io/niri/Configuration:-Introduction
+
+// ============================================================================
+// INPUT DEVICE CONFIGURATION
+// ============================================================================
+input {
+    keyboard {
+        xkb {
+            // layout "es"  // Descomentar para layout español
+        }
+        numlock
+    }
+    touchpad {
+        tap
+        natural-scroll
+    }
+    mouse {
+    }
+    trackpoint {
+    }
+}
+
+// ============================================================================
+// ENVIRONMENT VARIABLES
+// ============================================================================
+environment {
+    QT_QPA_PLATFORM "wayland"
+    MOZ_ENABLE_WAYLAND "1"
+    XDG_SESSION_TYPE "wayland"
+    GDK_BACKEND "wayland"
+    LANG "es_ES.UTF-8"
+    MESA_GL_VERSION_OVERRIDE "3.3"
+    MESA_GLSL_VERSION_OVERRIDE "330"
+}
+
+// ============================================================================
+// OUTPUT CONFIGURATION
+// ============================================================================
+/-output "eDP-1" {
+    mode "1920x1080@120.030"
+    scale 2
+    transform "normal"
+    position x=1280 y=0
+}
+
+// ============================================================================
+// LAYOUT CONFIGURATION
+// ============================================================================
+layout {
+    // Espacios entre ventanas
+    gaps 16
+
+    // Centrar la columna enfocada
+    center-focused-column "never"
+
+    // Ancho de columnas preestablecidas
+    preset-column-widths {
+        proportion 0.33333
+        proportion 0.5
+        proportion 0.66667
+    }
+
+    // Ancho de columna por defecto
+    default-column-width { proportion 0.5; }
+
+    // Configuración del anillo de enfoque
+    focus-ring {
+        width 4
+        active-color "#7fc8ff"
+        inactive-color "#505050"
+    }
+
+    // Configuración del borde
+    border {
+        off
+        width 4
+        active-color "#ffc87f"
+        inactive-color "#505050"
+        urgent-color "#9b0000"
+    }
+
+    // Configuración de sombra
+    shadow {
+        softness 30
+        spread 5
+        offset x=0 y=5
+        color "#0007"
+    }
+
+    struts {
+    }
+}
+
+// ============================================================================
+// STARTUP COMMANDS
+// ============================================================================
+spawn-at-startup "waybar"
+spawn-at-startup "swww-daemon"
+spawn-at-startup "mako"
+spawn-sh-at-startup "swayidle -w timeout 300 'swaylock -f -c 000000' timeout 600 'niri msg action power-off-monitors' resume 'niri msg action power-on-monitors'"
+spawn-sh-at-startup "swww img /home/odie/Downloads/marte.jpg"
+
+// ============================================================================
+// UI & MISC CONFIGURATION
+// ============================================================================
+hotkey-overlay {
+}
+
+screenshot-path "~/Pictures/Screenshots/Screenshot from %Y-%m-%d %H-%M-%S.png"
+
+// ============================================================================
+// ANIMATIONS CONFIGURATION - COPADITA CON SHADERS
+// ============================================================================
+animations {
+    // Descomenta para ralentizar todas las animaciones
+    // slowdown 1.5
+
+    // ========================================================================
+    // WORKSPACE SWITCH - Elástica y bounceable
+    // ========================================================================
+    workspace-switch {
+        // Underdamped spring para efecto "bouncy"
+        spring damping-ratio=0.75 stiffness=1200 epsilon=0.0001
+    }
+
+    // ========================================================================
+    // WINDOW OPEN - Efecto de aparición con shader luminoso
+    // ========================================================================
+    window-open {
+        duration-ms 300
+        curve "cubic-bezier" 0.25 0.46 0.45 0.94
+
+        // SHADER PERSONALIZADO: Efecto de radiación/brillo al abrir
+        custom-shader r"
+            vec4 open_color(vec3 coords_geo, vec3 size_geo) {
+                vec4 color = vec4(0.0);
+
+                if (0.0 <= coords_geo.x && coords_geo.x <= 1.0
+                        && 0.0 <= coords_geo.y && coords_geo.y <= 1.0)
+                {
+                    // Obtener textura de la ventana
+                    vec3 tex_coords = niri_geo_to_tex * coords_geo;
+                    color = texture2D(niri_tex, tex_coords.st);
+
+                    // Efecto de escala (zoom desde el centro)
+                    vec2 center = vec2(0.5);
+                    vec2 offset = coords_geo.xy - center;
+                    float scale = 0.7 + niri_clamped_progress * 0.3;
+                    offset *= scale;
+
+                    // Aplicar opacidad de entrada
+                    color.a *= niri_clamped_progress;
+
+                    // Añadir brillo al borde (glow effect)
+                    float dist = length(coords_geo.xy - center) * 2.0;
+                    float glow = exp(-dist * dist * 5.0) * niri_clamped_progress;
+                    color.rgb += vec3(0.3, 0.5, 0.8) * glow * 0.5;
+                }
+
+                return color;
+            }
+        "
+    }
+
+    // ========================================================================
+    // WINDOW CLOSE - Efecto de desvanecimiento con oscurecimiento
+    // ========================================================================
+    window-close {
+        duration-ms 250
+        curve "cubic-bezier" 0.25 0.46 0.45 0.94
+
+        // SHADER PERSONALIZADO: Efecto de contracción y desvanecimiento
+        custom-shader r"
+            vec4 close_color(vec3 coords_geo, vec3 size_geo) {
+                vec4 color = vec4(0.0);
+
+                if (0.0 <= coords_geo.x && coords_geo.x <= 1.0
+                        && 0.0 <= coords_geo.y && coords_geo.y <= 1.0)
+                {
+                    vec3 tex_coords = niri_geo_to_tex * coords_geo;
+                    color = texture2D(niri_tex, tex_coords.st);
+
+                    // Efecto de escala de salida
+                    vec2 center = vec2(0.5);
+                    vec2 offset = coords_geo.xy - center;
+                    float scale = 1.0 - (1.0 - niri_clamped_progress) * 0.3;
+                    offset *= scale;
+
+                    // Desvanecimiento
+                    color.a *= (1.0 - niri_clamped_progress);
+
+                    // Oscurrecimiento progresivo
+                    float dark = niri_clamped_progress * 0.3;
+                    color.rgb *= (1.0 - dark);
+                }
+
+                return color;
+            }
+        "
+    }
+
+    // ========================================================================
+    // HORIZONTAL VIEW MOVEMENT - Spring suave para vistas
+    // ========================================================================
+    horizontal-view-movement {
+        spring damping-ratio=0.9 stiffness=900 epsilon=0.00001
+    }
+
+    // ========================================================================
+    // WINDOW MOVEMENT - Spring suave para movimientos de ventanas
+    // ========================================================================
+    window-movement {
+        spring damping-ratio=0.9 stiffness=900 epsilon=0.00001
+    }
+
+    // ========================================================================
+    // WINDOW RESIZE - Con transición visual suave
+    // ========================================================================
+    window-resize {
+        duration-ms 200
+        curve "cubic-bezier" 0.34 1.56 0.64 1
+
+        // SHADER PERSONALIZADO: Efecto crossfade suave
+        custom-shader r"
+            vec4 resize_color(vec3 coords_curr_geo, vec3 size_curr_geo) {
+                vec3 tex_prev = niri_geo_to_tex_prev * coords_curr_geo;
+                vec4 color_prev = texture2D(niri_tex_prev, tex_prev.st);
+
+                vec3 tex_next = niri_geo_to_tex_next * coords_curr_geo;
+                vec4 color_next = texture2D(niri_tex_next, tex_next.st);
+
+                // Smooth crossfade entre la ventana anterior y siguiente
+                float t = niri_clamped_progress;
+                // Ease-in-out cubic
+                t = t < 0.5 ? 4.0 * t * t * t : 1.0 - pow(-2.0 * t + 2.0, 3.0) / 2.0;
+
+                vec4 color = mix(color_prev, color_next, t);
+                return color;
+            }
+        "
+    }
+
+    // ========================================================================
+    // CONFIG NOTIFICATION OPEN/CLOSE - Bounce suave
+    // ========================================================================
+    config-notification-open-close {
+        spring damping-ratio=0.65 stiffness=1200 epsilon=0.001
+    }
+
+    // ========================================================================
+    // EXIT CONFIRMATION OPEN/CLOSE - Bounce moderado
+    // ========================================================================
+    exit-confirmation-open-close {
+        spring damping-ratio=0.65 stiffness=700 epsilon=0.01
+    }
+
+    // ========================================================================
+    // SCREENSHOT UI OPEN - Fade rápido
+    // ========================================================================
+    screenshot-ui-open {
+        duration-ms 200
+        curve "cubic-bezier" 0.26 0.46 0.13 0.64
+    }
+
+    // ========================================================================
+    // OVERVIEW OPEN/CLOSE - Zoom elegante
+    // ========================================================================
+    overview-open-close {
+        spring damping-ratio=0.85 stiffness=900 epsilon=0.0001
+    }
+
+    // ========================================================================
+    // RECENT WINDOWS CLOSE - Desvanecimiento rápido
+    // ========================================================================
+    recent-windows-close {
+        spring damping-ratio=1.0 stiffness=1000 epsilon=0.001
+    }
+}
+
+// ============================================================================
+// WINDOW RULES
+// ============================================================================
+window-rule {
+    match app-id=r#"^org\.wezfurlong\.wezterm$"#
+    default-column-width {}
+}
+
+window-rule {
+    match app-id=r#"firefox$"# title="^Picture-in-Picture$"
+    open-floating true
+}
+
+// ============================================================================
+// KEY BINDINGS
+// ============================================================================
+binds {
+    // Overlays y utilidades
+    Mod+Shift+Slash { show-hotkey-overlay; }
+    Mod+T { spawn "alacritty"; }
+    Mod+D { spawn "fuzzel"; }
+    Super+Alt+L { spawn "swaylock"; }
+    Super+Alt+S allow-when-locked=true { spawn-sh "pkill orca || exec orca"; }
+
+    // Control de audio
+    XF86AudioRaiseVolume allow-when-locked=true { spawn-sh "wpctl set-volume @DEFAULT_AUDIO_SINK@ 0.1+ -l 1.0"; }
+    XF86AudioLowerVolume allow-when-locked=true { spawn-sh "wpctl set-volume @DEFAULT_AUDIO_SINK@ 0.1-"; }
+    XF86AudioMute        allow-when-locked=true { spawn-sh "wpctl set-mute @DEFAULT_AUDIO_SINK@ toggle"; }
+    XF86AudioMicMute     allow-when-locked=true { spawn-sh "wpctl set-mute @DEFAULT_AUDIO_SOURCE@ toggle"; }
+
+    // Control de reproducción
+    XF86AudioPlay        allow-when-locked=true { spawn-sh "playerctl play-pause"; }
+    XF86AudioStop        allow-when-locked=true { spawn-sh "playerctl stop"; }
+    XF86AudioPrev        allow-when-locked=true { spawn-sh "playerctl previous"; }
+    XF86AudioNext        allow-when-locked=true { spawn-sh "playerctl next"; }
+
+    // Control de brillo
+    XF86MonBrightnessUp allow-when-locked=true { spawn "brightnessctl" "--class=backlight" "set" "+10%"; }
+    XF86MonBrightnessDown allow-when-locked=true { spawn "brightnessctl" "--class=backlight" "set" "10%-"; }
+
+    // Vista general
+    Mod+O repeat=false { toggle-overview; }
+
+    // Gestión de ventanas - Cierre
+    Mod+Q repeat=false { close-window; }
+
+    // Navegación - Columnas y ventanas
+    Mod+Left  { focus-column-left; }
+    Mod+Down  { focus-window-down; }
+    Mod+Up    { focus-window-up; }
+    Mod+Right { focus-column-right; }
+    Mod+H     { focus-column-left; }
+    Mod+J     { focus-window-down; }
+    Mod+K     { focus-window-up; }
+    Mod+L     { focus-column-right; }
+
+    // Movimiento - Columnas y ventanas
+    Mod+Ctrl+Left  { move-column-left; }
+    Mod+Ctrl+Down  { move-window-down; }
+    Mod+Ctrl+Up    { move-window-up; }
+    Mod+Ctrl+Right { move-column-right; }
+    Mod+Ctrl+H     { move-column-left; }
+    Mod+Ctrl+J     { move-window-down; }
+    Mod+Ctrl+K     { move-window-up; }
+    Mod+Ctrl+L     { move-column-right; }
+
+    // Primera y última columna
+    Mod+Home { focus-column-first; }
+    Mod+End  { focus-column-last; }
+    Mod+Ctrl+Home { move-column-to-first; }
+    Mod+Ctrl+End  { move-column-to-last; }
+
+    // Navegación entre monitores
+    Mod+Shift+Left  { focus-monitor-left; }
+    Mod+Shift+Down  { focus-monitor-down; }
+    Mod+Shift+Up    { focus-monitor-up; }
+    Mod+Shift+Right { focus-monitor-right; }
+    Mod+Shift+H     { focus-monitor-left; }
+    Mod+Shift+J     { focus-monitor-down; }
+    Mod+Shift+K     { focus-monitor-up; }
+    Mod+Shift+L     { focus-monitor-right; }
+
+    // Mover columnas entre monitores
+    Mod+Shift+Ctrl+Left  { move-column-to-monitor-left; }
+    Mod+Shift+Ctrl+Down  { move-column-to-monitor-down; }
+    Mod+Shift+Ctrl+Up    { move-column-to-monitor-up; }
+    Mod+Shift+Ctrl+Right { move-column-to-monitor-right; }
+    Mod+Shift+Ctrl+H     { move-column-to-monitor-left; }
+    Mod+Shift+Ctrl+J     { move-column-to-monitor-down; }
+    Mod+Shift+Ctrl+K     { move-column-to-monitor-up; }
+    Mod+Shift+Ctrl+L     { move-column-to-monitor-right; }
+
+    // Navegación de espacios de trabajo
+    Mod+Page_Down      { focus-workspace-down; }
+    Mod+Page_Up        { focus-workspace-up; }
+    Mod+U              { focus-workspace-down; }
+    Mod+I              { focus-workspace-up; }
+
+    // Mover columnas entre espacios de trabajo
+    Mod+Ctrl+Page_Down { move-column-to-workspace-down; }
+    Mod+Ctrl+Page_Up   { move-column-to-workspace-up; }
+    Mod+Ctrl+U         { move-column-to-workspace-down; }
+    Mod+Ctrl+I         { move-column-to-workspace-up; }
+
+    // Mover espacios de trabajo entre monitores
+    Mod+Shift+Page_Down { move-workspace-down; }
+    Mod+Shift+Page_Up   { move-workspace-up; }
+    Mod+Shift+U         { move-workspace-down; }
+    Mod+Shift+I         { move-workspace-up; }
+
+    // Rueda del ratón
+    Mod+WheelScrollDown      cooldown-ms=150 { focus-workspace-down; }
+    Mod+WheelScrollUp        cooldown-ms=150 { focus-workspace-up; }
+    Mod+Ctrl+WheelScrollDown cooldown-ms=150 { move-column-to-workspace-down; }
+    Mod+Ctrl+WheelScrollUp   cooldown-ms=150 { move-column-to-workspace-up; }
+    Mod+WheelScrollRight      { focus-column-right; }
+    Mod+WheelScrollLeft       { focus-column-left; }
+    Mod+Ctrl+WheelScrollRight { move-column-right; }
+    Mod+Ctrl+WheelScrollLeft  { move-column-left; }
+    Mod+Shift+WheelScrollDown      { focus-column-right; }
+    Mod+Shift+WheelScrollUp        { focus-column-left; }
+    Mod+Ctrl+Shift+WheelScrollDown { move-column-right; }
+    Mod+Ctrl+Shift+WheelScrollUp   { move-column-left; }
+
+    // Espacios de trabajo (1-9)
+    Mod+1 { focus-workspace 1; }
+    Mod+2 { focus-workspace 2; }
+    Mod+3 { focus-workspace 3; }
+    Mod+4 { focus-workspace 4; }
+    Mod+5 { focus-workspace 5; }
+    Mod+6 { focus-workspace 6; }
+    Mod+7 { focus-workspace 7; }
+    Mod+8 { focus-workspace 8; }
+    Mod+9 { focus-workspace 9; }
+
+    // Mover columnas a espacios de trabajo
+    Mod+Ctrl+1 { move-column-to-workspace 1; }
+    Mod+Ctrl+2 { move-column-to-workspace 2; }
+    Mod+Ctrl+3 { move-column-to-workspace 3; }
+    Mod+Ctrl+4 { move-column-to-workspace 4; }
+    Mod+Ctrl+5 { move-column-to-workspace 5; }
+    Mod+Ctrl+6 { move-column-to-workspace 6; }
+    Mod+Ctrl+7 { move-column-to-workspace 7; }
+    Mod+Ctrl+9 { move-column-to-workspace 9; }
+
+    // Gestión de columnas
+    Mod+BracketLeft  { consume-or-expel-window-left; }
+    Mod+BracketRight { consume-or-expel-window-right; }
+    Mod+Comma  { consume-window-into-column; }
+    Mod+Period { expel-window-from-column; }
+
+    // Presets de ancho de columna
+    Mod+R { switch-preset-column-width; }
+    Mod+Shift+R { switch-preset-column-width-back; }
+
+    // Altura de ventana
+    Mod+Ctrl+Shift+R { switch-preset-window-height; }
+    Mod+Ctrl+R { reset-window-height; }
+
+    // Maximización y pantalla completa
+    Mod+F { maximize-column; }
+    Mod+Shift+F { fullscreen-window; }
+    Mod+M { maximize-window-to-edges; }
+    Mod+Ctrl+F { expand-column-to-available-width; }
+
+    // Centrado de columna
+    Mod+C { center-column; }
+    Mod+Ctrl+C { center-visible-columns; }
+
+    // Ajuste de tamaño
+    Mod+Minus { set-column-width "-10%"; }
+    Mod+Equal { set-column-width "+10%"; }
+    Mod+Shift+Minus { set-window-height "-10%"; }
+    Mod+Shift+Equal { set-window-height "+10%"; }
+
+    // Ventanas flotantes
+    Mod+V       { toggle-window-floating; }
+    Mod+Shift+V { switch-focus-between-floating-and-tiling; }
+
+    // Pestañas
+    Mod+W { toggle-column-tabbed-display; }
+
+    // Capturas de pantalla
+    Print { screenshot; }
+    Ctrl+Print { screenshot-screen; }
+    Alt+Print { screenshot-window; }
+
+    // Accesos directos del sistema
+    Mod+Escape allow-inhibiting=false { toggle-keyboard-shortcuts-inhibit; }
+    Mod+Shift+E { quit; }
+    Ctrl+Alt+Delete { quit; }
+    Mod+Shift+P { power-off-monitors; }
+}
+
+// ============================================================================
+// END OF CONFIGURATION
+// ============================================================================
