@@ -1,10 +1,8 @@
 // ============================================================================
-// NIRI WINDOW MANAGER - FULL ADVANCED CONFIGURATION WITH EDGE ANIMATIONS
+// NIRI WINDOW MANAGER - ADVANCED CONFIG (Alacritty + Ghostty + 8 Shaders)
 // ============================================================================
 // This config is in the KDL format: https://kdl.dev
-// "/-" comments out the following node.
-// Check the wiki for a full description of the configuration:
-// https://niri-wm.github.io/niri/Configuration:-Introduction
+// Optimizado para: Alacritty + Ghostty + Bordes Animados + 8 Shaders
 
 // ============================================================================
 // INPUT DEVICE CONFIGURATION
@@ -53,30 +51,23 @@ environment {
 // LAYOUT CONFIGURATION
 // ============================================================================
 layout {
-    // Espacios entre ventanas
     gaps 16
-
-    // Centrar la columna enfocada
     center-focused-column "never"
 
-    // Ancho de columnas preestablecidas
     preset-column-widths {
         proportion 0.33333
         proportion 0.5
         proportion 0.66667
     }
 
-    // Ancho de columna por defecto
     default-column-width { proportion 0.5; }
 
-    // Configuración del anillo de enfoque (ANIMADO CON SHADER)
     focus-ring {
         width 4
         active-color "#7fc8ff"
         inactive-color "#505050"
     }
 
-    // Configuración del borde
     border {
         off
         width 4
@@ -85,7 +76,6 @@ layout {
         urgent-color "#9b0000"
     }
 
-    // Configuración de sombra
     shadow {
         softness 30
         spread 5
@@ -115,21 +105,20 @@ hotkey-overlay {
 screenshot-path "~/Pictures/Screenshots/Screenshot from %Y-%m-%d %H-%M-%S.png"
 
 // ============================================================================
-// ANIMATIONS CONFIGURATION - SUPER COPADITA CON SHADERS AVANZADOS
+// ANIMATIONS CONFIGURATION - 8 SHADERS + BORDES ANIMADOS
 // ============================================================================
 animations {
-    // Descomenta para ralentizar todas las animaciones
-    // slowdown 1.5
+    // slowdown 1.5  // Descomenta para ralentizar
 
     // ========================================================================
-    // WORKSPACE SWITCH - Elástica y bounceable
+    // WORKSPACE SWITCH - Spring Bouncy
     // ========================================================================
     workspace-switch {
         spring damping-ratio=0.75 stiffness=1200 epsilon=0.0001
     }
 
     // ========================================================================
-    // WINDOW OPEN - Shader con glow y zoom elegante
+    // WINDOW OPEN - Glow + Zoom elegante
     // ========================================================================
     window-open {
         duration-ms 300
@@ -145,16 +134,13 @@ animations {
                     vec3 tex_coords = niri_geo_to_tex * coords_geo;
                     color = texture2D(niri_tex, tex_coords.st);
 
-                    // Efecto de escala (zoom desde el centro)
                     vec2 center = vec2(0.5);
                     vec2 offset = coords_geo.xy - center;
                     float scale = 0.7 + niri_clamped_progress * 0.3;
                     offset *= scale;
 
-                    // Aplicar opacidad de entrada
                     color.a *= niri_clamped_progress;
 
-                    // Añadir brillo al borde (glow effect)
                     float dist = length(coords_geo.xy - center) * 2.0;
                     float glow = exp(-dist * dist * 5.0) * niri_clamped_progress;
                     color.rgb += vec3(0.3, 0.5, 0.8) * glow * 0.5;
@@ -166,19 +152,13 @@ animations {
     }
 
     // ========================================================================
-    // WINDOW CLOSE - OPCIONES MULTIPLES DE SHADERS
+    // WINDOW CLOSE - 8 OPCIONES DE SHADERS
     // ========================================================================
-    // OPCION 1: PIXEL DISSOLVE (actual - descomposición de píxeles)
-    // OPCION 2: TORNADO VORTEX (remolino)
-    // OPCION 3: BLACK HOLE (agujero negro)
-    // OPCION 4: SHATTER (rotura)
-    // OPCION 5: INK DISPERSION (dispersión)
-    // OPCION 6: QUANTUM PHASE-OUT (desfase cuántico)
-    // OPCION 7: ELECTRIC DISCHARGE (descarga eléctrica)
-    // OPCION 8: PARTICLE BURST (explosión de partículas)
+    // ACTIVA: PIXEL DISSOLVE
+    // Alternativas descomentables: TORNADO, BLACKHOLE, SHATTER, INK, QUANTUM, ELECTRIC, PARTICLE
     // ========================================================================
 
-    // ========== OPCION 1: PIXEL DISSOLVE ==========
+    // ========== OPCION 1: PIXEL DISSOLVE (ACTIVO) ==========
     window-close {
         duration-ms 350
         curve "linear"
@@ -326,8 +306,6 @@ animations {
                     vec3 displaced = niri_geo_to_tex * vec3(coords_geo.xy + offset, 1.0);
                     color = texture2D(niri_tex, displaced.st);
 
-                    float angle = noise * 6.28318 * niri_clamped_progress;
-
                     color.a *= (1.0 - niri_clamped_progress);
                     
                     if (fract(cellFrac.x) < 0.1 || fract(cellFrac.y) < 0.1) {
@@ -393,19 +371,15 @@ animations {
                     vec3 tex_coords = niri_geo_to_tex * coords_geo;
                     color = texture2D(niri_tex, tex_coords.st);
 
-                    // Efecto de interferencia cuántica
                     vec2 center = vec2(0.5);
                     vec2 pos = coords_geo.xy - center;
                     float dist = length(pos) * 3.14159;
 
-                    // Onda senoidal que se propaga
                     float wave = sin(dist - niri_clamped_progress * 10.0);
                     float phase = (wave + 1.0) / 2.0;
 
-                    // Efecto de desvanecimiento con interferencia
                     color.a *= (1.0 - niri_clamped_progress) * (0.5 + phase * 0.5);
 
-                    // Color purpura/cian de desfase
                     color.rgb += vec3(0.5 + phase * 0.5, 0.0, 0.5 + (1.0 - phase) * 0.5) * 
                                     niri_clamped_progress * 0.2;
                 }
@@ -430,7 +404,6 @@ animations {
                     vec3 tex_coords = niri_geo_to_tex * coords_geo;
                     color = texture2D(niri_tex, tex_coords.st);
 
-                    // Rayos eléctricos
                     vec2 pixel = coords_geo.xy * size_geo.xy;
                     float noise = fract(sin(dot(pixel * 10.0, vec2(12.9898, 78.233))) * 43758.5453);
                     
@@ -438,14 +411,12 @@ animations {
                     float threshold = niri_clamped_progress + branching * 0.2;
 
                     if (noise > threshold - 0.1 && noise < threshold + 0.05) {
-                        // Brillo eléctrico intenso
                         color.rgb = mix(color.rgb, vec3(0.0, 0.8, 1.0), 0.8);
                         color.a *= 1.0;
                     } else {
                         color.a *= (1.0 - niri_clamped_progress);
                     }
 
-                    // Efecto de expansión radial
                     vec2 center = vec2(0.5);
                     float dist = length(coords_geo.xy - center);
                     if (dist < niri_clamped_progress) {
@@ -473,17 +444,14 @@ animations {
                     vec2 center = vec2(0.5);
                     vec2 pos = coords_geo.xy - center;
 
-                    // Generar partículas
                     vec2 cell = floor(coords_geo.xy * 12.0);
                     float particle_id = fract(sin(dot(cell, vec2(12.9898, 78.233))) * 43758.5453);
                     
-                    // Dirección y velocidad de cada partícula
                     float angle = particle_id * 6.28318;
                     float speed = 0.3 + fract(sin(particle_id * 47.0) * 43758.5453) * 0.2;
                     
                     vec2 velocity = vec2(cos(angle), sin(angle)) * speed * niri_clamped_progress;
                     
-                    // Escala y desvanecimiento de partículas
                     float scale = 1.0 - niri_clamped_progress * 1.5;
                     vec2 particle_pos = pos + velocity;
                     
@@ -492,7 +460,6 @@ animations {
 
                     color.a *= max(0.0, 1.0 - niri_clamped_progress);
                     
-                    // Brillo arco iris en las partículas
                     float hue = particle_id * 3.14159;
                     vec3 particle_color = vec3(
                         0.5 + 0.5 * sin(hue),
@@ -508,22 +475,16 @@ animations {
     }
 
     // ========================================================================
-    // HORIZONTAL VIEW MOVEMENT - Spring suave
+    // OTROS MOVIMIENTOS
     // ========================================================================
     horizontal-view-movement {
         spring damping-ratio=0.9 stiffness=900 epsilon=0.00001
     }
 
-    // ========================================================================
-    // WINDOW MOVEMENT - Spring suave
-    // ========================================================================
     window-movement {
         spring damping-ratio=0.9 stiffness=900 epsilon=0.00001
     }
 
-    // ========================================================================
-    // WINDOW RESIZE - Crossfade con shader
-    // ========================================================================
     window-resize {
         duration-ms 200
         curve "cubic-bezier" 0.34 1.56 0.64 1
@@ -545,51 +506,38 @@ animations {
         "
     }
 
-    // ========================================================================
-    // CONFIG NOTIFICATION OPEN/CLOSE
-    // ========================================================================
     config-notification-open-close {
         spring damping-ratio=0.65 stiffness=1200 epsilon=0.001
     }
 
-    // ========================================================================
-    // EXIT CONFIRMATION OPEN/CLOSE
-    // ========================================================================
     exit-confirmation-open-close {
         spring damping-ratio=0.65 stiffness=700 epsilon=0.01
     }
 
-    // ========================================================================
-    // SCREENSHOT UI OPEN
-    // ========================================================================
     screenshot-ui-open {
         duration-ms 200
         curve "cubic-bezier" 0.26 0.46 0.13 0.64
     }
 
-    // ========================================================================
-    // OVERVIEW OPEN/CLOSE
-    // ========================================================================
     overview-open-close {
         spring damping-ratio=0.85 stiffness=900 epsilon=0.0001
     }
 
-    // ========================================================================
-    // RECENT WINDOWS CLOSE
-    // ========================================================================
     recent-windows-close {
         spring damping-ratio=1.0 stiffness=1000 epsilon=0.001
     }
 }
 
 // ============================================================================
-// WINDOW RULES - CON ANIMACIONES EN BORDES
+// WINDOW RULES - ALACRITTY + GHOSTTY CON BORDES ANIMADOS
 // ============================================================================
+
+// ========== ALACRITTY - Verde Neon Especial ==========
 window-rule {
-    match app-id=r#"^org\.wezfurlong\.wezterm$"#
-    default-column-width {}
+    match app-id=r#"^Alacritty$"#
     
-    // Borde animado con glow
+    default-column-width { proportion 0.6; }
+    
     border {
         on
         width 2
@@ -597,28 +545,50 @@ window-rule {
         inactive-color "#004d2e"
     }
     
-    // Focus ring también animado
     focus-ring {
         width 3
         active-color "#00ffaa"
         inactive-color "#003d42"
     }
-}
-
-window-rule {
-    match app-id=r#"firefox$"# title="^Picture-in-Picture$"
-    open-floating true
     
-    // Borde especial para ventana flotante
-    border {
+    shadow {
         on
-        width 2
-        active-color "#ff6b9d"
-        inactive-color "#4d213d"
+        softness 35
+        spread 6
+        offset x=0 y=4
+        color "#00ff8840"
     }
 }
 
-// Animación de borde especial para ventanas activas
+// ========== GHOSTTY - Cyan Vibrante ==========
+window-rule {
+    match app-id=r#"^ghostty$"#
+    
+    default-column-width { proportion 0.65; }
+    
+    border {
+        on
+        width 2
+        active-color "#00d9ff"
+        inactive-color "#003d52"
+    }
+    
+    focus-ring {
+        width 3
+        active-color "#00ffff"
+        inactive-color "#001f2d"
+    }
+    
+    shadow {
+        on
+        softness 40
+        spread 8
+        offset x=0 y=5
+        color "#00d9ff40"
+    }
+}
+
+// ========== Ventanas Activas - Animación Global ==========
 window-rule {
     match is-active=true
     
@@ -644,7 +614,7 @@ window-rule {
     }
 }
 
-// Animación de borde para ventanas inactivas
+// ========== Ventanas Inactivas ==========
 window-rule {
     match is-active=false
     
@@ -664,7 +634,7 @@ window-rule {
     }
 }
 
-// Flotantes con animación especial
+// ========== Ventanas Flotantes - Naranja Animado ==========
 window-rule {
     match is-floating=true
     
@@ -692,6 +662,19 @@ window-rule {
     }
 }
 
+// ========== Firefox Picture-in-Picture ==========
+window-rule {
+    match app-id=r#"firefox$"# title="^Picture-in-Picture$"
+    open-floating true
+    
+    border {
+        on
+        width 2
+        active-color "#ff6b9d"
+        inactive-color "#4d213d"
+    }
+}
+
 // ============================================================================
 // KEY BINDINGS
 // ============================================================================
@@ -699,6 +682,7 @@ binds {
     // Overlays y utilidades
     Mod+Shift+Slash { show-hotkey-overlay; }
     Mod+T { spawn "alacritty"; }
+    Mod+Shift+T { spawn "ghostty"; }
     Mod+D { spawn "fuzzel"; }
     Super+Alt+L { spawn "swaylock"; }
     Super+Alt+S allow-when-locked=true { spawn-sh "pkill orca || exec orca"; }
